@@ -43,10 +43,13 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
 
-    - name: create env file
-      run: |
-        touch .env
-        echo CARS_API_KEY=${{ secrets.CARS_API_KEY }} >> .env
+    - name: Make envfile
+      uses: SpicyPizza/create-envfile@v1.3
+      with:
+        envkey_DEBUG: false
+        envkey_CARS_API_KEY: ${{ secrets.CARS_API_KEY }}
+        file_name: .env
+        fail_on_empty: false
 
     - name: npm install, build, and test
       run: |
