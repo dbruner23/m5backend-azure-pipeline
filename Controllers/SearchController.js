@@ -1,4 +1,6 @@
-const axios = require('axios')
+const axios = require('axios');
+const dotenv = require("dotenv");
+dotenv.config();
 
 const getRego = async (req, res) => {
     const { rego } = req.params;
