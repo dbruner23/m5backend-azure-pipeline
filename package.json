@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.19"
+
   },
   "repository": {
     "type": "git",
@@ -32,4 +33,4 @@
   },
   "homepage": "https://github.com/dbruner23/m5backend-azure-pipeline#readme",
   "description": ""
-}
+  }
