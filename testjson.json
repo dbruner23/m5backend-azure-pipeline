@@ -1,0 +1,49 @@
+{
+"carDetails": {
+        "CarInfo": {
+            "FuelType": "Petrol",
+            "input": {
+                "country": "",
+                "state": "NZ",
+                "plate": "lpn101"
+            },
+            "CarMake": "BMW",
+            "BodyStyle": "SEDAN",
+            "NumberOfSeats": "0",
+            "assembly": "IMPORTED BUILT-UP",
+            "Description": "2000 BMW 728i",
+            "success": true,
+            "imageUrl": "https://api.carsxe.com/pic?image=@Qk1XIDcyOGk=",
+            "RegistrationYear": "2000",
+            "EngineSize": "2788",
+            "vin": "WBABM52010JM21918",
+            "CarModel": "728i"
+        },
+        "registrationNumber": "lpn101",
+        "businessCar": 0,
+        "parkedAdress": {
+            "a": "18C Hopkins Street, Woolston, Christchurch 8023",
+            "pxid": "2-1CWqQzepGtUzhwi01a7pl6",
+            "v": 0
+        },
+        "policyStartDate": "YYYY-MM-DD"
+
+    },
+    "driverDetails": {
+        "firstName": "Logan",
+        "lastName": "Lawson",
+        "gender": "male",
+        "insuranceIncidents": 0,
+        "driverLicenseClass": 1,
+        "driverHoldsPolicy": 0,
+        "driverEmail": "anemail@example.com",
+        "driverPhoneNumber": "+6421123123123"
+    },
+    "planDetails": {
+        "carValue": 9000,
+        "planExcess": 600,
+        "planType": "standard",
+        "smartExtras": []
+    }
+
+}
