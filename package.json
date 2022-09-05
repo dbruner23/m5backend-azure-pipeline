@@ -1,11 +1,11 @@
 {
   "name": "m5-backend-azure",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "start": "node index.js"
+    "start": "node index.js",
+    "devStart": "nodemon server.js"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +16,20 @@
     "dotenv": "^16.0.2",
     "express": "^4.18.1",
     "jest": "^29.0.1",
+    "stripe": "^10.7.0",
     "supertest": "^6.2.4"
-  }
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dbruner23/m5backend-azure-pipeline.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/dbruner23/m5backend-azure-pipeline/issues"
+  },
+  "homepage": "https://github.com/dbruner23/m5backend-azure-pipeline#readme",
+  "description": ""
 }
