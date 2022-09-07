@@ -1,9 +1,11 @@
 const express = require("express");
 const { createCheckoutSession } = require("../Controllers/CheckoutController.js");
-const router = express.Router();
+const { createInvoice } = require("../Controllers/CheckoutController.js");
+const CheckoutRouter = express.Router();
 
-router.post("/", createCheckoutSession);
+CheckoutRouter.post("/pay", createCheckoutSession);
+CheckoutRouter.post("/invoice", createInvoice);
 
-module.exports = {
-    router,
+module.exports = { //makes it externally available
+    CheckoutRouter,
 };
