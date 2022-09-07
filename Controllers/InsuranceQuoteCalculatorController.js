@@ -1,7 +1,7 @@
 const calculateQuote = (req, res) => {
 
-    const quote = req.body.planDetails.carValue * 0.03 * req.body.carDetails.CarInfo.EngineSize / 1000;
-    req.body.insuranceQuoteValue = quote;
+    const quote = req.body.value * 0.03 * req.body.enginecap / 1000;
+    req.body.quote = quote;
     res.send(req.body);
 };
 
