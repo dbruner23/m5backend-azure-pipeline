@@ -4,9 +4,9 @@ const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY) // Set up strip
 // Store items for purchase. Use items map (key value pairs of items)
 // **Keep item price and name on server in database or json, then just need to send ID from client to server (don't directly send price, otherwise someone can hack in and send a $0 price and get things for free).
 const policyItems = new Map([
-    [1, { priceInCents: 4500, name: "Third Party, Fire & Theft", description: "Moderate cover - "}],
-    [2, { priceInCents: 5500, name: "Comprehensive Everyday Plan", description: "Full cover - "}],
-    [3, { priceInCents: 2500, name: "Third Party Only", description: "Basic cover - "}],
+    [1, { priceInCents: 20000, name: "Third Party, Fire & Theft", description: "Moderate cover - "}],
+    [2, { priceInCents: 32000, name: "Comprehensive Everyday Plan", description: "Full cover - "}],
+    [3, { priceInCents: 15000, name: "Third Party Only", description: "Basic cover - "}],
     [4, { priceInCents: 6000, name: "Mechanical Breakdown Insurance", description: "Smart Extra - Mechanical Breakdown."}],
     [5, { priceInCents: 3600, name: "Guaranteed Asset Protection", description: "Smart Extra - Guaranteed Asset Protection."}],
     [6, { priceInCents: 4800, name: "Payment Protection Insurance", description: "Smart Extra - Payment Protection Insurance."}],
@@ -39,8 +39,8 @@ const createCheckoutSession = async (req, res) => {
             // Array of items that we send down for purchase. Items object from script.js file.
             mode: 'payment', //one time payment. Could use 'subscription' as well, for example.
             allow_promotion_codes: true, //Enable user-redeemable promotion codes using the 'allow_promotions_code' API parameter
-            success_url: `${process.env.CLIENT_URL}/success.html`, //populate this in env variable, so we can change this in production and development.
-            cancel_url: `${process.env.CLIENT_URL}/index.html`
+            success_url: `${process.env.CLIENT_URL}/success`, //populate this in env variable, so we can change this in production and development.
+            cancel_url: `${process.env.CLIENT_URL}/summary`
         }) //Get info from Stripe, function that takes in an object
         res.json({ url: session.url})
     } catch (e) {
