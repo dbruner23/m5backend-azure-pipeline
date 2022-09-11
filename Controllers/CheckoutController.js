@@ -1,47 +1,62 @@
 require("dotenv").config({path: __dirname + '/../../.env'}); //specify path to .env file);
+const { policyItems, extraItems, planQuoteCalculator } = require("./InsuranceQuoteCalculatorController.js"); //Put all three inside {} because they're all coming from the same file location.
 const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY) // Set up stripe. Pass stripe key into the function.
 
-// Store items for purchase. Use items map (key value pairs of items)
-// **Keep item price and name on server in database or json, then just need to send ID from client to server (don't directly send price, otherwise someone can hack in and send a $0 price and get things for free).
-const policyItems = new Map([
-    [1, { priceInCents: 20000, name: "Third Party, Fire & Theft", description: "Moderate cover - "}],
-    [2, { priceInCents: 32000, name: "Comprehensive Everyday Plan", description: "Full cover - "}],
-    [3, { priceInCents: 15000, name: "Third Party Only", description: "Basic cover - "}],
-    [4, { priceInCents: 6000, name: "Mechanical Breakdown Insurance", description: "Smart Extra - Mechanical Breakdown."}],
-    [5, { priceInCents: 3600, name: "Guaranteed Asset Protection", description: "Smart Extra - Guaranteed Asset Protection."}],
-    [6, { priceInCents: 4800, name: "Payment Protection Insurance", description: "Smart Extra - Payment Protection Insurance."}],
-])
 
 // Post request to redirect us to the URL. Takes in a request and a response. Accessing server with post request.
+// ***Currently, checkout session is created using data sent in req.body, which is fine for non-sensitive data, but in this caes, the quote price must not be tampered with.
+// HTTP is raw data and will show quote price without encryption. HTTPS is encrypted.
 const createCheckoutSession = async (req, res) => {
     try {
+        var extraIndex = 1; // Set starting index at 1, since this is the first entry in extra items.
         const session = await stripe.checkout.sessions.create({
             // submit_type: 'pay',
             payment_method_types: ['card'], //Most use cases are card payment only. Everything with underscores in Stripe.
-            line_items: req.body.items.map(item => { 
-                const policyItem = policyItems.get(item.id) //storeItem is the planItem that's been pull out of the above array. 'item' is the entry in the array passed in from req at front end.
-                var policyDescription = policyItem.description
-                if (item.excess != null && item.value != null) {
-                    policyDescription += `based on an excess of $${item.excess} and an agreed valuation of $${item.value}.`
-                }
-                return { //return object in correct format for Stripe:
+
+            line_items: [{ //return object in correct format for Stripe:
                     price_data: {
                         currency: 'nzd',
                         product_data: {
-                            name: policyItem.name,
-                            description: policyDescription
+                            name: policyItems.get(req.body.plan).name,
+                            description: policyItems.get(req.body.plan).description + `based on an excess of $${req.body.excess} and an agreed valuation of $${req.body.value}.`
                         },
-                        unit_amount: policyItem.priceInCents //price in cents
+                        unit_amount: planQuoteCalculator(req)*100 //price in cents ****Changed this - write a function which gets passed plan number, excess, value and it gives you plan value.
                     },
                     quantity: 1,
-                };
-            }), //for each item in the map array, create a storeItem based on its id.
+                }].concat( // Need to concatenate these two arrays (1. plan, 2. extras) into one array so that it's in the format of Stripe line_items (single array).
+// *******  ATTENTION!! Only works if extras are selected in order i.e. only the following 4 scenarios work: i) choose no extras, ii) extra 1, iii) extras 1 and 2, or iv) extras 1, 2 & 3.
+// TO FIX: Change extras from boolean to indexes instead [1,2,3] i.e. same as plans (mech breakdown has index of 1, ... etc.)...make them an array of items instead.            
+                req.body.extras.map(extra => { //looping around the extras.
+                if (extra) { //if extra ==true i.e. customer chose 1 of the 3 extras.
+                    const extraItem = extraItems.get(extraIndex); //storeItem is the planItem that's been pull out of the above array. 'item' is the entry in the array passed in from req at front end.
+                    
+                    //if (item.excess != null && item.value != null) {
+                    //    policyDescription += `based on an excess of $${item.excess} and an agreed valuation of $${item.value}.`
+                    //    policyPrice = req.body.quote // **** Instead of getting this from the request body (passing the value over Http is not good), change this to call the insurance quote calculator instead and then front end just sends ID instead.
+                    //}
+                    return { //return object in correct format for Stripe:
+                        price_data: {
+                            currency: 'nzd',
+                            product_data: {
+                                name: extraItem.name,
+                                description: extraItem.description
+                            },
+                            unit_amount: extraItem.priceInCents*100 //price in cents
+                        },
+                        quantity: 1,
+                    };
+                }
+                extraIndex++; //looping around the extras array elements.
+
+            })), //for each item in the map array, create a storeItem based on its id.
+            
             // Array of items that we send down for purchase. Items object from script.js file.
             mode: 'payment', //one time payment. Could use 'subscription' as well, for example.
             allow_promotion_codes: true, //Enable user-redeemable promotion codes using the 'allow_promotions_code' API parameter
             success_url: `${process.env.CLIENT_URL}/success`, //populate this in env variable, so we can change this in production and development.
             cancel_url: `${process.env.CLIENT_URL}/summary`
         }) //Get info from Stripe, function that takes in an object
+
         res.json({ url: session.url})
     } catch (e) {
         res.status(500).json({error: e.message}) // Catch any errors send some json with our error.
@@ -53,8 +68,8 @@ const createInvoice = async (req, res) => {
     try {
         //Create a customer
         const customer = await stripe.customers.create({
-            name: req.body.customer.name, // will change to pull in from the request: req.body.customer.name
-            email: req.body.customer.email, // req.body.customer.email
+            name: req.body.d1firstname + " " + req.body.d1lastname, // will change to pull in from the request: req.body.customer.name
+            email: req.body.email, // req.body.customer.email
             description: 'My first customer', //req.body.customer.description
           });
         
@@ -65,30 +80,53 @@ const createInvoice = async (req, res) => {
             days_until_due: 30,
           });
 
-        //Create items loop (for each item sent through in the request body --> create a product, price and invoice item):
-        for(const item of req.body.items) {
-        // req.body.items.map(item => { 
-            const policyItem = policyItems.get(item.id) //storeItem is the planItem that's been pull out of the above array. 'item' is the entry in the array passed in from req at front end.
-            var policyDescription = policyItem.description
-            if (item.excess != null && item.value != null) {
-                policyDescription += `Plan based on an excess of $${item.excess} and an agreed valuation of $${item.value}.`
-            }
-            //Create a product
-            const product = await stripe.products.create({name: policyItem.name, description: policyItem.description});
+//Create a product, price and invoice item for the insurance plan choice:
 
-            //Create a price
-            const price = await stripe.prices.create({
-                product: product.id, // req.body.product.id
-                unit_amount: policyItem.priceInCents, //req.body.product.price
-                currency: 'nzd',
-            });
-            
-            //Create an invoice item
-            const invoiceItem = await stripe.invoiceItems.create({
-                customer: customer.id,
-                price: price.id,
-                invoice: invoice.id,
-            });
+        //Create a product
+        const product = await stripe.products.create({
+            name: policyItems.get(req.body.plan).name,
+            description: policyItems.get(req.body.plan).description + `based on an excess of $${req.body.excess} and an agreed valuation of $${req.body.value}.`
+        });
+
+        //Create a price
+        const price = await stripe.prices.create({
+            product: product.id, // req.body.product.id
+            unit_amount: planQuoteCalculator(req)*100, // Price of the plan
+            currency: 'nzd',
+        });
+        
+        //Create an invoice item
+        const invoiceItem = await stripe.invoiceItems.create({
+            customer: customer.id,
+            price: price.id,
+            invoice: invoice.id,
+        });
+
+//Create a product, price and invoice item for the extras choice(s):
+
+        var extraIndex = 1; 
+        for(const extra of req.body.extras) { // Similar to map - it loops over all elements in the array and gives you that element each time.
+            if (extra) { //if extra ==true i.e. customer chose 1 of the 3 extras.
+                const extraItem = extraItems.get(extraIndex);
+
+                //Create a product
+                const product = await stripe.products.create({name: extraItem.name, description: extraItem.description});
+    
+                //Create a price
+                const price = await stripe.prices.create({
+                    product: product.id, // Stripe creates id's for each object (i.e. product). Then we use this id to reference a particular customer, product etc.
+                    unit_amount: extraItem.priceInCents*100, // 
+                    currency: 'nzd',
+                });
+                
+                //Create an invoice item
+                const invoiceItem = await stripe.invoiceItems.create({
+                    customer: customer.id,
+                    price: price.id,
+                    invoice: invoice.id,
+                });
+            }
+            extraIndex ++;
         }
 
     //Finalise invoice
